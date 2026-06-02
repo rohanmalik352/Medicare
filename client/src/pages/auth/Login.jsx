@@ -17,14 +17,36 @@ const Login = ({ defaultRole = 'PATIENT' }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    
     try {
-      const user = await login(email, password, role)
-      toast.success(`Welcome back, ${user.name}!`)
-      if (user.role === 'PATIENT') navigate('/patient/dashboard')
-      else if (user.role === 'ADMIN') navigate('/admin/dashboard')
-      else navigate('/doctor/dashboard')
+      // Execute the context method that securely intercepts API failures
+      const result = await login(email, password, role)
+      
+      // Handle explicit bad credential status safely without collapsing the component state
+      if (!result.success) {
+        toast.error(result.error || 'Invalid credentials')
+        return
+      }
+
+      // If successful, read properties safely from the returned user payload object
+      const runtimeUser = result.user
+      if (runtimeUser && runtimeUser.name) {
+        toast.success(`Welcome back, ${runtimeUser.name}!`)
+        
+        if (runtimeUser.role === 'PATIENT') {
+          navigate('/patient/dashboard')
+        } else if (runtimeUser.role === 'ADMIN') {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/doctor/dashboard')
+        }
+      } else {
+        throw new Error('Authentication schema received is incomplete.')
+      }
+
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Login failed')
+      console.error('❌ Login UI Interface Intercept Failure:', err.message)
+      toast.error('An unexpected routing layout failure occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -68,6 +90,7 @@ const Login = ({ defaultRole = 'PATIENT' }) => {
             {ROLES.map(r => (
               <button
                 key={r}
+                type="button" // Force button types to prevent accidental form submittals on click
                 onClick={() => setRole(r)}
                 className={`flex-1 py-2 rounded-md text-sm font-medium transition ${
                   role === r ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'
@@ -81,15 +104,27 @@ const Login = ({ defaultRole = 'PATIENT' }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input type="email" className="input" placeholder="e.g. doctor@medicare.com"
-                value={email} onChange={e => setEmail(e.target.value)} required />
+              <input 
+                type="email" 
+                className="input text-sm px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                placeholder="e.g. doctor@medicare.com"
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input type="password" className="input" placeholder="••••••••"
-                value={password} onChange={e => setPassword(e.target.value)} required />
+              <input 
+                type="password" 
+                className="input text-sm px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                placeholder="••••••••"
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required 
+              />
             </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full py-2.5">
+            <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition">
               {loading ? 'Signing in...' : `Sign In as ${role.charAt(0) + role.slice(1).toLowerCase()}`}
             </button>
           </form>

@@ -292,3 +292,14 @@ UPLOAD_DIR=uploads
 ## AI Tools Used
 
 Built with assistance from Claude (Anthropic) for code scaffolding. All architecture decisions, debugging, and implementation ownership by the candidate.
+## Live Demo
+
+| | Link |
+|---|---|
+| 🌐 Frontend | https://medicare-azure-six.vercel.app |
+| ⚙️ Backend | https://medicare-backend-44gu.onrender.com |
+| 📦 GitHub | https://github.com/rohanmalik352/Medicare |
+
+> ⚠️ Backend is hosted on Render free tier — may take 30-60 seconds to wake up on first request.
+
+---

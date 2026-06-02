@@ -286,11 +286,6 @@ UPLOAD_DIR=uploads
 - ✅ Status flow: PENDING → ASSIGNED → REVIEWED
 - ✅ AI result display (confidence, urgency, reason, keywords)
 
-## What Is Pending (Optional)
-
-- Flutter mobile app (Day 4 bonus)
-- Analytics charts on admin dashboard
-- Deployment (Vercel + Render)
 
 ---
 

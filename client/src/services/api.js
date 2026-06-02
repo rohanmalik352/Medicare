@@ -18,13 +18,15 @@ api.interceptors.response.use(
     const originalRequest = err.config
 
     if (err.response?.status === 401) {
-      // If the 401 happens on login, bypass redirection so your Toast error can render!
-      if (originalRequest.url.includes('/auth/login')) {
+      // 🌟 RULE 1: If the 401 happens on authentication checks, DO NOT redirect!
+      if (originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/me')) {
         return Promise.reject(err)
       }
 
-      // Handle actual session timeouts on authenticated routes safely
+      // 🌟 RULE 2: Only clear tokens and redirect if the user was genuinely inside an active session
       localStorage.removeItem('token')
+      
+      // Stop loop conditions if they are already on an auth screen
       if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
         window.location.href = '/login'
       }

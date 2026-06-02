@@ -2,59 +2,83 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
-import { Activity } from 'lucide-react'
+import { Activity, AlertCircle } from 'lucide-react'
 
 const Register = () => {
   const [form, setForm] = useState({ 
     name: '', 
     email: '', 
     password: '', 
+    confirmPassword: '',
     age: '', 
     gender: 'Male', 
     phone: '' 
   })
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
   const { register } = useAuth()
   const navigate = useNavigate()
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleChange = e => {
+    const { name, value } = e.target
+    setForm({ ...form, [name]: value })
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: '' })
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+
+    if (!form.name.trim()) {
+      newErrors.name = 'Full name is required'
+    } else if (form.name.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters'
+    }
+
+    if (!form.email.trim()) {
+      newErrors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = 'Please enter a valid email'
+    }
+
+    if (!form.password) {
+      newErrors.password = 'Password is required'
+    } else if (form.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters'
+    }
+
+    if (form.password !== form.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match'
+    }
+
+    if (form.age && (form.age < 1 || form.age > 150)) {
+      newErrors.age = 'Please enter a valid age'
+    }
+
+    if (form.phone && !/^\d{10}$/.test(form.phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Please enter a valid phone number (10 digits)'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!validateForm()) return
+
     setLoading(true)
-    
     try {
-      // Formulate payload parameters with clear sanitization guards
-      const signupPayload = {
-        name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-        age: form.age ? parseInt(form.age, 10) : undefined,
-        gender: form.gender.toUpperCase(), // Match uppercase backend schema enums securely
-        phone: form.phone.trim(),
-        role: 'PATIENT'
-      }
-
-      // Fire off context registration that handles network/server errors internally
-      const result = await register(signupPayload)
-
-      // Handle server duplicate key warnings or validation rejects gracefully
-      if (!result.success) {
-        toast.error(result.error || 'Registration failed')
-        return
-      }
-
-      // Verify that user state context updated accurately before executing side effects
-      if (result.user) {
-        toast.success('Account created successfully!')
-        navigate('/patient/dashboard')
-      } else {
-        throw new Error('Server registered user profile but data payload is corrupted.')
-      }
-
+      await register({ ...form, role: 'PATIENT' })
+      toast.success('Account created successfully!')
+      navigate('/patient/dashboard')
     } catch (err) {
-      console.error('❌ Registration UI Interface Intercept Failure:', err.message)
-      toast.error('An unexpected interface error occurred during registration. Please check inputs.')
+      const message = err.response?.data?.error || err.message || 'Registration failed'
+      toast.error(message)
+      console.error('Registration error:', err)
     } finally {
       setLoading(false)
     }
@@ -70,94 +94,121 @@ const Register = () => {
           <span className="text-2xl font-bold text-gray-900">MediCare AI</span>
         </div>
 
-        {/* Card Container Layout Wrapper */}
-        <div className="bg-white p-8 border border-gray-200 rounded-xl shadow-sm">
+        <div className="card">
           <h2 className="text-xl font-bold text-gray-900 mb-1">Create Patient Account</h2>
           <p className="text-gray-500 text-sm mb-6">Register to upload reports and get doctor assignments</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
               <input 
                 name="name" 
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className={`input ${errors.name ? 'border-red-500' : ''}`}
                 placeholder="John Doe"
                 value={form.name} 
                 onChange={handleChange} 
-                required 
+                disabled={loading}
               />
+              {errors.name && <p className="text-red-600 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.name}</p>}
             </div>
+
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
               <input 
                 name="email" 
                 type="email" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className={`input ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="john@example.com"
                 value={form.email} 
                 onChange={handleChange} 
-                required 
+                disabled={loading}
               />
+              {errors.email && <p className="text-red-600 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.email}</p>}
             </div>
+
+            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
               <input 
                 name="password" 
                 type="password" 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className={`input ${errors.password ? 'border-red-500' : ''}`}
                 placeholder="Min 6 characters"
                 value={form.password} 
                 onChange={handleChange} 
-                required 
-                minLength={6} 
+                disabled={loading}
               />
+              {errors.password && <p className="text-red-600 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.password}</p>}
             </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+              <input 
+                name="confirmPassword" 
+                type="password" 
+                className={`input ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                placeholder="Re-enter password"
+                value={form.confirmPassword} 
+                onChange={handleChange} 
+                disabled={loading}
+              />
+              {errors.confirmPassword && <p className="text-red-600 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{errors.confirmPassword}</p>}
+            </div>
+
+            {/* Age & Gender */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
                 <input 
                   name="age" 
                   type="number" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  className={`input ${errors.age ? 'border-red-500' : ''}`}
                   placeholder="25"
                   value={form.age} 
                   onChange={handleChange} 
                   min={1} 
-                  max={120} 
-                  required
+                  max={120}
+                  disabled={loading}
                 />
+                {errors.age && <p className="text-red-600 text-xs mt-1">{errors.age}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                 <select 
                   name="gender" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  className="input" 
                   value={form.gender} 
                   onChange={handleChange}
+                  disabled={loading}
                 >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Other</option>
                 </select>
               </div>
             </div>
+
+            {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input 
                 name="phone" 
-                type="tel"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className={`input ${errors.phone ? 'border-red-500' : ''}`}
                 placeholder="9876543210"
                 value={form.phone} 
-                onChange={handleChange} 
-                required
+                onChange={handleChange}
+                disabled={loading}
               />
+              {errors.phone && <p className="text-red-600 text-xs mt-1">{errors.phone}</p>}
             </div>
+
             <button 
               type="submit" 
               disabled={loading} 
-              className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition text-sm shadow-sm"
+              className="btn-primary w-full py-2.5 disabled:opacity-60"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>

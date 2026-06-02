@@ -4,7 +4,8 @@ import Sidebar from '../../components/layout/Sidebar'
 import StatusBadge from '../../components/common/StatusBadge'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
-import { LayoutDashboard, FileText, Upload, Plus } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { LayoutDashboard, FileText, Upload, Plus, AlertCircle } from 'lucide-react'
 
 const navLinks = [
   { to: '/patient/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -16,9 +17,26 @@ const PatientDashboard = () => {
   const { user } = useAuth()
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    api.get('/reports/my').then(res => setReports(res.data)).finally(() => setLoading(false))
+    const fetchReports = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const { data } = await api.get('/reports/my')
+        setReports(Array.isArray(data) ? data : [])
+      } catch (err) {
+        const message = err.response?.data?.error || 'Failed to load reports'
+        setError(message)
+        console.error('Error fetching reports:', err)
+        toast.error(message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchReports()
   }, [])
 
   const recent = reports.slice(0, 3)
@@ -31,9 +49,20 @@ const PatientDashboard = () => {
       <main className="ml-64 flex-1 p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Good morning, {user?.name?.split(' ')[0]} 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Good morning, {user?.name?.split(' ')[0] || 'User'} 👋</h1>
           <p className="text-gray-500">Here's your health overview</p>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-700 font-medium">Unable to load reports</p>
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-6 mb-8">
@@ -68,15 +97,23 @@ const PatientDashboard = () => {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Recent Reports</h3>
-            <Link to="/patient/reports" className="text-blue-600 text-sm hover:underline">View all</Link>
+            {reports.length > 3 && (
+              <Link to="/patient/reports" className="text-blue-600 text-sm hover:underline">View all</Link>
+            )}
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-gray-400">Loading...</div>
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-400 mt-2">Loading reports...</p>
+            </div>
           ) : reports.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <FileText size={40} className="mx-auto mb-2 opacity-30" />
               <p>No reports yet. Upload your first report!</p>
+              <Link to="/patient/upload-report" className="btn-primary mt-4 inline-block">
+                Upload Report
+              </Link>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -89,10 +126,10 @@ const PatientDashboard = () => {
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {recent.map(r => (
-                  <tr key={r._id} className="py-2">
-                    <td className="py-3 font-medium">{r.patientName}</td>
+                  <tr key={r._id} className="hover:bg-gray-50 py-2">
+                    <td className="py-3 font-medium">{r.patientName || '—'}</td>
                     <td className="py-3 text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</td>
-                    <td className="py-3 text-blue-600">{r.aiResult?.suggestedCategory || '—'}</td>
+                    <td className="py-3 text-blue-600">{r.aiResult?.suggestedCategory || 'Analyzing...'}</td>
                     <td className="py-3"><StatusBadge status={r.status} /></td>
                     <td className="py-3">
                       <Link to={`/patient/reports/${r._id}`} className="text-blue-600 hover:underline">View</Link>

@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { AuthProvider } from "./context/AuthContext";
+// Or, if you are importing the hook:
+import { useAuth } from "./context/AuthContext";
 
 const ProtectedRoute = ({ children, role }) => {
   const { user, loading } = useAuth()

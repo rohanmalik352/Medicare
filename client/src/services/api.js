@@ -7,10 +7,10 @@ const getBaseURL = () => {
 
   // Production URLs — update with your actual backend URL
   if (currentOrigin.includes('medicare-azure-six.vercel.app')) {
-    return 'https://your-backend-production-url.com/api'  // ← Update this
+    return 'https://medicare-backend-44gu.onrender.com'  // ← Update this
   }
   if (currentOrigin.includes('medicare-q52gs2p9t')) {
-    return 'https://your-backend-staging-url.com/api'  // ← Update this
+    return 'https://medicare-backend-44gu.onrender.com'  // ← Update this
   }
 
   // Development with .env

@@ -1,13 +1,12 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/client/$1" }
+    {
+      "source": "/api/(.*)",
+      "destination": "https://medicare-backend-44gu.onrender.com/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

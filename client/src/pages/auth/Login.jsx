@@ -78,7 +78,7 @@ const Login = () => {
         </div>
         <div>
           <h1 className="text-white text-4xl font-bold leading-tight mb-4">
-            Intelligent Doctor<br />Assignment System
+           AI-Powered Doctor Recommendation System
           </h1>
           <p className="text-slate-400 text-lg">
             AI-powered routing connects patients with the right specialist automatically.
